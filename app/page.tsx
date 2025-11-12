@@ -22,7 +22,6 @@ const EconomicImpactSimulator     = dynamic(() => import("@/components/economic-
 const FactCards                   = dynamic(() => import("@/components/fact-cards"), { ssr: false })
 const DeepTimeline                = dynamic(() => import("@/components/deep-timeline"), { ssr: false })
 const AdvancedQuiz                = dynamic(() => import("@/components/advanced-quiz"), { ssr: false })
-const GameMaterialsInventory      = dynamic(() => import("@/components/game-materials-inventory"), { ssr: false })
 const CraftingGame                = dynamic(() => import("@/components/crafting-game"), { ssr: false })
 
 export default function Page() {
@@ -42,27 +41,32 @@ export default function Page() {
 
     {/* Timeline & Evolution */}
     <InteractiveTimeline />
+
+     <InteractiveEvolutionChart />
+     
     <DeepTimeline />
-    <InteractiveEvolutionChart />
+   
 
     {/* Materials Exploration */}
-    <Materials />
-    <MaterialPropertiesExplorer />
-    <Material3DViewer />
+  
+  
+
     <MaterialComparison />
 
     {/* Impact */}
-    <Impact />
-    <MaterialImpactCalculator />
-    <EconomicImpactSimulator />
-
-    {/* Learning & Games */}
-    <AdvancedQuiz />
-    <GameMaterialsInventory />
-    <CraftingGame />
+ 
+  
+    
 
     {/* Fun Facts & Footer */}
     <FactCards />
+
+    {/* Learning & Games */}
+    <AdvancedQuiz />
+
+    <CraftingGame />
+
+    
     <Footer />
   </div>
 </main>

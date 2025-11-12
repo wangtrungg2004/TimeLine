@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 
 interface TimelineEvent {
-  year: number;          // để sắp xếp/nội bộ
-  yearLabel: string;     // nhãn hiển thị (VD: "2,5 triệu năm TCN", "1856 CN")
-  isBCE?: boolean;       // mốc trước CN
+  year: number;          // mốc khởi phát/biểu tượng của thời kỳ
+  yearLabel: string;     // nhãn hiển thị (VD: "1824–nay")
   title: string;
   description: string;
   material: string;
@@ -22,143 +21,151 @@ interface TimelineEvent {
 
 const timelineEvents: TimelineEvent[] = [
   {
-    year: -2500000,
-    yearLabel: "≈ 2,5 triệu năm TCN",
-    isBCE: true,
-    title: "Thời Đá",
-    description: "Con người bắt đầu sử dụng đá",
-    material: "Đá",
-    icon: "🪨",
-    iconLabel: "Đá",
+    year: 1856,
+    yearLabel: "1856–nay",
+    title: "Sắt/Thép – Xương sống công nghiệp",
+    description: "Vật liệu kỹ thuật cốt lõi của hạ tầng, vận tải và chế tạo.",
+    material: "Sắt/Thép",
+    icon: "🏗️",
+    iconLabel: "Kết cấu thép",
     details: {
-      discovery: "Con người tìm thấy đá có thể được đẽo để tạo công cụ sắc nhọn",
-      impact: "Cho phép con người săn bắt, xây dựng nơi trú ẩn",
-      technology: "Công cụ đá, mũi tên, dao",
-      legacy: "Nền tảng của tất cả công nghệ sau này",
-    },
-    color: "from-gray-600 to-gray-800",
-  },
-  {
-    year: -3000,
-    yearLabel: "≈ 3000 TCN",
-    isBCE: true,
-    title: "Thời Đồng",
-    description: "Phát hiện hợp kim đồng",
-    material: "Đồng",
-    icon: "🔔",
-    iconLabel: "Chuông đồng",
-    details: {
-      discovery: "Người cổ đại phát hiện trộn đồng và thiếc tạo ra đồng thiếc (bronze) cứng hơn",
-      impact: "Vũ khí tốt hơn, công cụ bền hơn, thương mại phát triển",
-      technology: "Kiếm, mũi tên, đồng tiền",
-      legacy: "Đánh dấu sự bùng nổ nghề luyện kim và giao thương",
-    },
-    color: "from-amber-600 to-amber-800",
-  },
-  {
-    year: -1200,
-    yearLabel: "≈ 1200 TCN",
-    isBCE: true,
-    title: "Thời Sắt",
-    description: "Sắt dần thay thế đồng",
-    material: "Sắt",
-    icon: "⚙️",
-    iconLabel: "Bánh răng",
-    details: {
-      discovery: "Người cổ đại học cách luyện sắt từ quặng",
-      impact: "Sắt phong phú hơn đồng, vũ khí mạnh hơn, nông nghiệp phát triển",
-      technology: "Kiếm sắt, cày sắt, công cụ",
-      legacy: "Mở rộng quy mô nông nghiệp và quân sự, hình thành các đế chế",
+      discovery:
+        "Quy trình Bessemer (1856) mở đường sản xuất thép hàng loạt; ngày nay thép hiện diện ở mọi khu vực kinh tế.",
+      impact:
+        "Thép chiếm phần lớn trong xây dựng & hạ tầng, cơ khí, ô tô; sản lượng toàn cầu ~1,9 tỷ tấn/năm.",
+      technology:
+        "Quặng sắt → gang → (BOF/EAF) → thép; AHSS, thép không gỉ; kinh tế tuần hoàn nhờ tái chế.",
+      legacy:
+        "‘Xương sống’ của công nghiệp hiện đại, tiếp tục nâng cấp bằng công nghệ luyện thép xanh và tái chế."
     },
     color: "from-slate-600 to-slate-800",
   },
   {
-    year: 1856,
-    yearLabel: "1856 CN",
-    title: "Cách Mạng Thép",
-    description: "Quy trình Bessemer",
-    material: "Thép",
-    icon: "🏗️",
-    iconLabel: "Cẩu tháp xây dựng",
+    year: 1859,
+    yearLabel: "CN hoá: 1859–nay",
+    title: "Than đá/Dầu mỏ – Năng lượng hoá thạch",
+    description: "Nguồn năng lượng nền tảng của công nghiệp và giao thông thế kỷ 20–21.",
+    material: "Than đá & Dầu mỏ",
+    icon: "🛢️",
+    iconLabel: "Thùng dầu",
     details: {
-      discovery: "Henry Bessemer phát minh quy trình sản xuất thép hàng loạt",
-      impact: "Giá thép giảm mạnh; tàu, cầu, tòa nhà cao tầng bùng nổ",
-      technology: "Lò Bessemer, đường ray, cầu thép",
-      legacy: "Tăng tốc công nghiệp hoá và hạ tầng hiện đại",
+      discovery:
+        "Giếng dầu thương mại đầu tiên (Drake, 1859) đánh dấu kỷ nguyên dầu mỏ; than là trụ cột điện lực và luyện kim.",
+      impact:
+        "Trong nhiều thập kỷ, ~80% cung năng lượng đến từ dầu/than/khí; than vẫn là nguồn điện lớn nhất toàn cầu.",
+      technology:
+        "Khai thác & lọc dầu, cracking, hoá dầu; nhiệt điện than/khí; CCS/CCUS đang được thử nghiệm.",
+      legacy:
+        "Vừa là nền tảng tăng trưởng, vừa là áp lực giảm phát thải—chuyển dịch năng lượng đang diễn ra."
     },
-    color: "from-slate-500 to-slate-700",
+    color: "from-amber-700 to-amber-900",
+  },
+  {
+    year: 1824,
+    yearLabel: "1824–nay",
+    title: "Xi măng/Bê tông – Cơ sở hạ tầng",
+    description: "Vật liệu nhân tạo được dùng nhiều thứ nhì sau nước.",
+    material: "Xi măng & Bê tông",
+    icon: "🧱",
+    iconLabel: "Khối bê tông/gạch",
+    details: {
+      discovery:
+        "Portland cement được cấp bằng sáng chế năm 1824; bê tông hiện diện trong hầu hết công trình xây dựng.",
+      impact:
+        "Thế giới dùng ~30 tỷ tấn bê tông/năm; sản xuất xi măng đóng góp >7% CO₂ do con người.",
+      technology:
+        "Clinker (CaCO₃ → CaO) + phụ gia (SCM), bê tông cốt thép, UHPC; tối ưu phối liệu, thay nhiên liệu, và bắt giữ carbon.",
+      legacy:
+        "Trụ cột đô thị hóa; trọng tâm cải tiến là giảm phát thải chuỗi giá trị xi măng-bê tông."
+    },
+    color: "from-zinc-600 to-neutral-800",
   },
   {
     year: 1907,
-    yearLabel: "1907 CN",
-    title: "Nhựa Tổng Hợp",
-    description: "Bakelite - nhựa đầu tiên",
-    material: "Nhựa",
-    icon: "🧪",
-    iconLabel: "Ống nghiệm",
+    yearLabel: "1907–nay",
+    title: "Nhựa/Hóa dầu – Tiêu dùng đại trà",
+    description: "Vật liệu nhẹ, rẻ, gia công linh hoạt cho hàng hóa toàn cầu.",
+    material: "Nhựa & Hoá dầu",
+    icon: "🧴",
+    iconLabel: "Chai nhựa",
     details: {
-      discovery: "Leo Baekeland tạo ra Bakelite, nhựa tổng hợp đầu tiên",
-      impact: "Thay thế nhiều vật liệu tự nhiên; mở ra kỷ nguyên tiêu dùng",
-      technology: "Bakelite, Celluloid, Nylon",
-      legacy: "Đặt nền móng ngành nhựa quy mô toàn cầu",
+      discovery:
+        "Bakelite (1907) mở kỷ nguyên nhựa tổng hợp; sau đó là polyethylene, PVC, PET, nylon…",
+      impact:
+        "Sản lượng nhựa đã tăng gấp đôi 2000–2019 lên ~460 triệu tấn; tái chế còn hạn chế → áp lực môi trường.",
+      technology:
+        "Cracking dầu/khí → monomer → polymer; tái chế cơ học/hóa học; vật liệu sinh học/thay thế đang nổi.",
+      legacy:
+        "Xương sống bao bì, dệt may, y tế, ô tô… đồng thời là ưu tiên hàng đầu của kinh tế tuần hoàn."
     },
-    color: "from-blue-500 to-blue-700",
+    color: "from-blue-500 to-indigo-600",
   },
   {
     year: 1947,
-    yearLabel: "1947 CN",
-    title: "Transistor",
-    description: "Bán dẫn thay đổi thế giới",
-    material: "Bán Dẫn",
+    yearLabel: "1947–nay",
+    title: "Silicon/Bán dẫn – Kinh tế số",
+    description: "Con chip là nền tảng của máy tính, viễn thông và AI.",
+    material: "Bán dẫn",
     icon: "💻",
-    iconLabel: "Máy tính",
+    iconLabel: "Máy tính/chip",
     details: {
-      discovery: "Transistor được phát minh tại Bell Labs",
-      impact: "Thay thế ống chân không; máy tính nhỏ gọn, mạnh mẽ",
-      technology: "Transistor, IC, vi xử lý",
-      legacy: "Kỷ nguyên số và công nghiệp bán dẫn",
+      discovery:
+        "Transistor (1947) và vi mạch tích hợp mở ra thời đại số; chuỗi cung ứng toàn cầu phức tạp.",
+      impact:
+        "Ngành bán dẫn >600 tỷ USD/năm, kích hoạt hàng nghìn tỷ USD hoạt động số và sản xuất công nghệ cao.",
+      technology:
+        "Wafer silicon, EUV, đóng gói tiên tiến; bộ xử lý, bộ nhớ, cảm biến; vật liệu & node tiến tới 2 nm.",
+      legacy:
+        "Hạ tầng cốt lõi của AI/điện toán/5G; năng lực chip quyết định năng suất và an ninh kinh tế."
     },
     color: "from-purple-600 to-pink-600",
   },
   {
-    year: 2004,
-    yearLabel: "2004 CN",
-    title: "Graphene",
-    description: "Vật liệu 2D nổi bật",
-    material: "Graphene",
-    icon: "⚛️",
-    iconLabel: "Nguyên tử",
+    year: 1991,
+    yearLabel: "1991–nay",
+    title: "Pin Lithium – Chuyển đổi năng lượng",
+    description: "Nguồn trữ điện chủ đạo cho thiết bị, xe điện và lưới điện.",
+    material: "Pin Li-ion",
+    icon: "🔋",
+    iconLabel: "Pin sạc",
     details: {
-      discovery: "Graphene được tách từ graphite bằng phương pháp băng dính",
-      impact: "Cường độ vượt trội, dẫn điện/nhiệt cao; mỏng nhất",
-      technology: "Graphene, Nanotubes, vật liệu 2D",
-      legacy: "Ứng dụng tiềm năng: điện tử linh hoạt, cảm biến, năng lượng",
+      discovery:
+        "Sony thương mại hóa pin Li-ion năm 1991; chi phí và mật độ năng lượng cải thiện mạnh.",
+      impact:
+        "Pin lưu trữ là công nghệ năng lượng sạch tăng nhanh nhất; Li-ion thống trị EV và lưu trữ điện.",
+      technology:
+        "NMC/NCA/LFP, cathode/anode, gigafactory; LFP giá thấp nổi trội ở EV & ESS; chuỗi cung ứng toàn cầu.",
+      legacy:
+        "Trụ cột điện hoá giao thông và tích trữ tái tạo; đổi mới hoá học & tái chế sẽ quyết định quy mô thị trường."
     },
-    color: "from-cyan-600 to-blue-600",
+    color: "from-emerald-600 to-teal-600",
   },
   {
-    year: 2024,
-    yearLabel: "2024 CN",
-    title: "Vật Liệu Bền Vững",
-    description: "Tương lai xanh",
-    material: "Bio-Materials",
-    icon: "🌱",
-    iconLabel: "Mầm cây",
+    year: 2004,
+    yearLabel: "2004–nay",
+    title: "Vật liệu nano/Composite – Công nghệ tương lai",
+    description: "Nhẹ–bền–tính năng cao cho hàng không, năng lượng, y sinh.",
+    material: "Nano/Composite",
+    icon: "🧬",
+    iconLabel: "Vật liệu tiên tiến",
     details: {
-      discovery: "Vật liệu từ nấm, tảo, phụ phẩm nông nghiệp được thương mại hóa",
-      impact: "Giảm phát thải vòng đời, phân hủy sinh học, hỗ trợ kinh tế tuần hoàn",
-      technology: "Mycelium leather, algae plastics, bio-composites",
-      legacy: "Định hình tiêu chuẩn sản xuất xanh & chuỗi cung ứng bền vững",
+      discovery:
+        "Bước ngoặt graphene (2004) và bùng nổ composite sợi carbon; thương mại hoá sâu trong hàng không.",
+      impact:
+        "Máy bay thế hệ mới dùng ~50% vật liệu composite; nano-vật liệu mở đường cho cảm biến, pin, y sinh.",
+      technology:
+        "CFRP, GFRP, prepreg, in-situ curing; graphene, CNT, vật liệu 2D; ứng dụng cánh gió, ô tô, điện tử linh hoạt.",
+      legacy:
+        "Nâng hiệu suất – giảm khối lượng – tiết kiệm năng lượng; là nền tảng cho thiết kế thế hệ tiếp theo."
     },
-    color: "from-green-600 to-emerald-600",
+    color: "from-cyan-600 to-sky-700",
   },
 ];
 
 export default function DeepTimeline() {
-  const [selectedEvent, setSelectedEvent] = useState(4); // mặc định chọn Nhựa 1907
+  const [selectedEvent, setSelectedEvent] = useState(4); // mặc định chọn Silicon/Bán dẫn
   const event = timelineEvents[selectedEvent];
 
-  // Tôn trọng Reduce Motion
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -168,7 +175,6 @@ export default function DeepTimeline() {
     return () => mq.removeEventListener?.("change", onChange);
   }, []);
 
-  // Emoji fallback để tránh lỗi icon
   const Emoji = ({ symbol, label, size = "text-6xl" }: { symbol: string; label: string; size?: string }) => (
     <span
       role="img"
@@ -187,9 +193,11 @@ export default function DeepTimeline() {
   return (
     <section className="py-20 px-4 md:px-8 bg-gradient-to-b from-background to-card/20">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-balance">Dòng Thời Gian Chi Tiết</h2>
+        <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-balance">
+          7 Nhóm Vật Liệu Chi Phối Kinh Tế Hiện Đại
+        </h2>
         <p className="text-center text-muted-foreground mb-12 text-balance">
-          Khám phá từng bước tiến của lịch sử vật liệu
+          Mỗi mốc gồm nguồn gốc – tác động – công nghệ – di sản/triển vọng.
         </p>
 
         {/* Timeline Visualization */}
@@ -198,7 +206,10 @@ export default function DeepTimeline() {
             <div className="absolute inset-0 bg-gradient-to-r from-gray-600 via-slate-600 via-blue-600 via-purple-600 to-green-600 opacity-30" />
             <div
               className="absolute h-full bg-gradient-to-r from-primary to-accent transition-all"
-              style={{ width: `${((selectedEvent + 1) / timelineEvents.length) * 100}%`, transitionDuration: reduceMotion ? "0ms" : "300ms" }}
+              style={{
+                width: `${((selectedEvent + 1) / timelineEvents.length) * 100}%`,
+                transitionDuration: reduceMotion ? "0ms" : "300ms",
+              }}
               aria-hidden="true"
             />
           </div>
@@ -237,7 +248,7 @@ export default function DeepTimeline() {
 
           <div className="grid md:grid-cols-2 gap-6 mt-8 pt-8 border-t border-border/50">
             <div>
-              <h4 className="font-bold mb-3 text-primary">Phát Hiện</h4>
+              <h4 className="font-bold mb-3 text-primary">Phát Hiện / Khởi phát</h4>
               <p className="text-sm leading-relaxed">{event.details.discovery}</p>
             </div>
             <div>
@@ -252,7 +263,7 @@ export default function DeepTimeline() {
             </div>
             <div>
               <h4 className="font-bold mb-3" style={{ color: "var(--chart-3)" }}>
-                Di Sản
+                Di Sản / Thực tiễn
               </h4>
               <p className="text-sm leading-relaxed">{event.details.legacy}</p>
             </div>
@@ -263,11 +274,3 @@ export default function DeepTimeline() {
   );
 }
 
-/* Nếu chưa có trong globals.css, thêm:
-@keyframes scale-up { 0% {transform: scale(.98); opacity: .9;} 100% {transform: scale(1); opacity: 1;} }
-.animate-scale-up { animation: scale-up .3s ease both; }
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-scale-up { animation: none !important; }
-}
-*/
