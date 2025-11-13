@@ -37,14 +37,21 @@ const HAND_CAPACITY = 4;
 const fmtYear = (y: number | null) =>
   y == null ? "—" : y < 0 ? `${Math.abs(y)} TCN` : `${y} SCN`;
 
-const shuffle = <T,>(a: T[]) => {
-  const x = a.slice();
-  for (let i = x.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [x[i], x[j]] = [x[j], x[i]];
+// An toàn cho mọi kích thước mảng, không dùng destructuring swap
+const shuffle = <T,>(arr: readonly T[]): T[] => {
+  const x = Array.isArray(arr) ? arr.slice() : [];
+  // Nếu mảng trống/1 phần tử thì trả về luôn
+  if (x.length <= 1) return x;
+
+  for (let k = x.length - 1; k > 0; k--) {
+    const j = (Math.random() * (k + 1)) | 0; // số nguyên 0..k
+    const temp = x[k];
+    x[k] = x[j];
+    x[j] = temp;
   }
   return x;
 };
+
 
 const ordinalVi = (n: number) =>
   n === 1 ? "Nhất" : n === 2 ? "Nhì" : n === 3 ? "Ba" : "Tư";
@@ -91,29 +98,36 @@ const RAW_DECK: MaterialCard[] = [
 
   // Phần II — Công nghiệp
   { id:"steam-newcomen", system:"Hơi nước", faceA:"Động cơ Newcomen", faceB:"1712", stats:["Mỏ than","Bơm nước"], fact:"Thực dụng", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1712") },
+  { id:"coal-coke-darby", system:"Than đá", faceA:"Cốc than của Darby (Coal→Coke)", faceB:"1709", stats:["Năng lượng","Luyện kim","Sản xuất"], fact:"Cốt lõi cho lò cao & CN hoá", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1709") },
   { id:"cotton-gin", system:"Bông", faceA:"Máy tách hạt Bông", faceB:"1783", stats:["Mass","Nô lệ"], fact:"Bỏ nút thắt", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1783") },
   { id:"rubber-vulcanization", system:"Cao su", faceA:"Lưu hóa (Goodyear)", faceB:"1844", stats:["Vật liệu","Lốp"], fact:"Ổn định cao su", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1844") },
   { id:"steel-bessemer", system:"Thép", faceA:"Quy trình Bessemer", faceB:"1855", stats:["Mass","Rẻ"], fact:"Đường sắt/nhà cao", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1855") },
   { id:"petroleum-drake", system:"Dầu mỏ", faceA:"Giếng Drake", faceB:"1859", stats:["Năng lượng di động"], fact:"Kỷ nguyên dầu", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1859") },
   { id:"aluminum-hall-heroult", system:"Nhôm", faceA:"Hall–Héroult", faceB:"1886", stats:["Điện phân","Nhẹ"], fact:"Hàng không", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1886") },
+  { id:"spices-sea-route-india", system:"Gia vị", faceA:"Đường biển tới Ấn Độ (Vasco da Gama)", faceB:"1498", stats:["Thương mại gia vị","Đế quốc hải quân","Toàn cầu hóa"], fact:"Mở kỷ nguyên thương mại gia vị đường biển", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1498") },
 
   // Phần III — Hiện đại
   { id:"plastic-bakelite", system:"Nhựa", faceA:"Bakelite", faceB:"1907", stats:["Cách điện","Tiêu dùng"], fact:"Nhựa tổng hợp 1st", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1907") },
-  { id:"semiconductor-transistor", system:"Chất bán dẫn", faceA:"Bóng bán dẫn", faceB:"1947", stats:["Thu nhỏ","KTS"], fact:"Vi mạch", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1947") },
-  { id:"battery-liion", system:"Pin", faceA:"Li-ion thương mại", faceB:"1991", stats:["Mật độ năng lượng","Di động"], fact:"Cách mạng mobile", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1991") },
-
-  // ===== Bổ sung theo yêu cầu =====
-  { id:"spices-sea-route-india", system:"Gia vị", faceA:"Đường biển tới Ấn Độ (Vasco da Gama)", faceB:"1498", stats:["Thương mại gia vị","Đế quốc hải quân","Toàn cầu hóa"], fact:"Mở kỷ nguyên thương mại gia vị đường biển", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1498") },
-  { id:"uranium-cp1", system:"Uranium", faceA:"Chicago Pile-1 (CP-1)", faceB:"1942", stats:["Năng lượng hạt nhân","Vũ khí","Địa chính trị"], fact:"Phản ứng dây chuyền nhân tạo đầu tiên", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1942") },
-  { id:"coal-coke-darby", system:"Than đá", faceA:"Cốc than của Darby (Coal→Coke)", faceB:"1709", stats:["Năng lượng","Luyện kim","Sản xuất"], fact:"Cốt lõi cho lò cao & CN hoá", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1709") },
-  { id:"cement-portland", system:"Xi măng Portland", faceA:"Bằng sáng chế Portland cement", faceB:"1824", stats:["Vật liệu xây dựng","Đô thị","Cơ sở hạ tầng"], fact:"Nền tảng xây dựng hiện đại", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1824") },
   { id:"haber-bosch-ammonia", system:"Phân đạm", faceA:"Quy trình Haber–Bosch (NH₃)", faceB:"1909", stats:["Nông nghiệp","Dân số","Hoá học"], fact:"Phân bón tổng hợp nuôi sống tỷ người", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1909") },
-  { id:"glass-float-pilkington", system:"Kính nổi", faceA:"Float glass Pilkington", faceB:"1959", stats:["Kiến trúc","Ô tô","Sản xuất chuẩn hoá"], fact:"Bề mặt phẳng/nhẵn quy mô lớn", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1959") },
+  { id:"semiconductor-transistor", system:"Chất bán dẫn", faceA:"Bóng bán dẫn", faceB:"1947", stats:["Thu nhỏ","KTS"], fact:"Vi mạch", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1947") },
+  { id:"uranium-cp1", system:"Uranium", faceA:"Chicago Pile-1 (CP-1)", faceB:"1942", stats:["Năng lượng hạt nhân","Vũ khí","Địa chính trị"], fact:"Phản ứng dây chuyền nhân tạo đầu tiên", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1942") },
   { id:"rare-earth-ndfeb", system:"Đất hiếm", faceA:"Nam châm NdFeB", faceB:"1982", stats:["Động cơ điện","Điện tử","Gió"], fact:"Nam châm mạnh cho công nghệ hiện đại", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1982") },
+  { id:"battery-liion", system:"Pin", faceA:"Li-ion thương mại", faceB:"1991", stats:["Mật độ năng lượng","Di động"], fact:"Cách mạng mobile", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1991") },
   { id:"song-paper-money", system:"Tiền giấy", faceA:"Tiền giấy nhà Tống", faceB:"1020 SCN", stats:["Tài chính","Lưu thông tiền tệ","Thương mại"], fact:"Tiền giấy đầu tiên quy mô nhà nước", section:"Cổ đại", yearStart: parseVNPeriodToYearStart("1020 SCN") },
+// === EXTRA CARDS — chèn vào cuối RAW_DECK ===
+
+// CỔ ĐẠI — bổ sung vật liệu nền tảng
+{ id:"indus-fired-bricks", system:"Gạch nung", faceA:"Gạch nung đô thị Harappa–Mohenjo-daro", faceB:"~2600 TCN", stats:["Đô thị lưới ô","Thoát nước","Chuẩn hóa"], fact:"Tỉ lệ gạch 1:2:4 đặc trưng", section:"Cổ đại", yearStart: parseVNPeriodToYearStart("~2600 TCN") },
+
+// HIỆN ĐẠI — nhựa kỹ thuật, composite, nano & bán dẫn mở rộng
+{ id:"graphene-2004", system:"Graphene", faceA:"Geim & Novoselov cô lập graphene", faceB:"2004", stats:["2D siêu mỏng","Dẫn điện/nhiệt cao","Cơ học vượt trội"], fact:"Nobel Vật lý 2010; cảm biến/điện tử dẻo", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("2004") },
+
+// THÉP KHÔNG GỈ — cầu nối công nghiệp → hiện đại
+{ id:"stainless-1913", system:"Thép không gỉ", faceA:"Harry Brearley pha 12–13% Cr", faceB:"1913", stats:["Chống ăn mòn","Y tế/thực phẩm","Kiến trúc"], fact:"Austenitic 304/316 phổ biến toàn cầu", section:"Hiện đại", yearStart: parseVNPeriodToYearStart("1913") },
+
 ];
 
-/* ============ Timeline config (lá dài, chữ lớn) ============ */
+/* ============ Timeline config ============ */
 const CHIP_W = 280;
 const CHIP_H = 84;
 const RAIL_Y = 170;
@@ -129,11 +143,11 @@ const TL_W        = MARGIN_X * 2 + NUM_SLOTS * SLOT_SPACING;
 
 const centerOf = (slot: number) => MARGIN_X + SLOT_SPACING * (slot + 0.5);
 
-/* ==== Kích thước thẻ trên TAY ĐỘI (portrait) ==== */
+/* ==== Kích thước thẻ trên TAY ĐỘI ==== */
 const HAND_CARD_W = 170;
 const HAND_CARD_H = 240;
 
-/* ============ Slot helpers (nhường chỗ / kiểm tra) ============ */
+/* ============ Slot helpers ============ */
 function makeRoom(slots: (SlotCell | null)[], target: number): (SlotCell | null)[] | null {
   const n = slots.length;
   if (slots[target] === null) return slots.slice();
@@ -192,7 +206,7 @@ function useScrollSync(vpRef: React.RefObject<HTMLDivElement>) {
   return { ratio, setByRatio };
 }
 
-/* ============ Timeline board (slots cố định + scrollbar + zoom) ============ */
+/* ============ Timeline board ============ */
 export type SlotBoardHandle = { scrollToSlot: (index: number) => void };
 
 const SlotTimelineBoard = React.forwardRef(function SlotTimelineBoard(
@@ -242,6 +256,7 @@ const SlotTimelineBoard = React.forwardRef(function SlotTimelineBoard(
     },
     [zoom]
   );
+  
 
   const onDragOver: React.DragEventHandler<HTMLDivElement> = (e) => {
     if (!canPlace) return;
@@ -366,7 +381,7 @@ const SlotTimelineBoard = React.forwardRef(function SlotTimelineBoard(
               )}
             </svg>
 
-            {/* Slots trống (dài) */}
+            {/* Slots trống */}
             {slots.map((_, i) => (
               <div
                 key={`slot-${i}`}
@@ -388,7 +403,7 @@ const SlotTimelineBoard = React.forwardRef(function SlotTimelineBoard(
               />
             ))}
 
-            {/* Card đã đặt trên slot (dài + chữ lớn) */}
+            {/* Card đã đặt trên slot */}
             {slots.map(
               (s, i) =>
                 s && (
@@ -438,7 +453,18 @@ const SlotTimelineBoard = React.forwardRef(function SlotTimelineBoard(
       </div>
 
       {/* Slider điều khiển */}
-      <Slider />
+      <div className="mt-3 flex items-center gap-2">
+        <span className="text-[11px] text-amber-200/75">Trượt</span>
+        <input
+          type="range"
+          min={0}
+          max={1000}
+          step={1}
+          value={Math.round(ratio * 1000)}
+          onChange={(e) => setByRatio(parseInt(e.target.value, 10) / 1000)}
+          className="w-full accent-amber-400"
+        />
+      </div>
     </div>
   );
 });
@@ -480,6 +506,13 @@ export default function HistoryStatsAndFactsGameBoard() {
   const [showStartModal, setShowStartModal] = React.useState(false);
   const [mode, setMode] = React.useState<GameMode | null>(null);
   const [showSoloWin, setShowSoloWin] = React.useState(false);
+
+  // ngay dưới các useState khác trong HistoryStatsAndFactsGameBoard:
+const anchorSlotIndex = React.useMemo(() => {
+  if (!anchor) return -1;
+  return slots.findIndex((s) => s?.card.id === anchor.id);
+}, [slots, anchor]);
+
 
   // ---------- Start / Reset game ----------
   const resetToIdle = React.useCallback(() => {
@@ -649,6 +682,18 @@ export default function HistoryStatsAndFactsGameBoard() {
     setFlipModal(null);
     nextPlayer();
   }
+
+  // thêm useEffect trong HistoryStatsAndFactsGameBoard:
+React.useEffect(() => {
+  if (anchorSlotIndex >= 0) {
+    // dùng rAF cho mượt khi người chơi kéo slider zoom liên tục
+    const r = requestAnimationFrame(() => {
+      boardRef.current?.scrollToSlot(anchorSlotIndex);
+    });
+    return () => cancelAnimationFrame(r);
+  }
+}, [zoom, anchorSlotIndex]);
+
 
   // SOLO: hiện modal chúc mừng khi người chơi hết bài
   React.useEffect(() => {
@@ -856,7 +901,12 @@ export default function HistoryStatsAndFactsGameBoard() {
 
       {/* Popup kết quả lật thẻ */}
       {flipModal && (
-        <ResultModal modal={flipModal} onConfirm={confirmFlipModal} />
+        <ResultModal
+          modal={flipModal}
+          onConfirm={confirmFlipModal}
+          /* NEW: khoá tương tác khi đã thắng solo để không “kết thúc lượt” được nữa */
+          locked={mode === "solo" && showSoloWin}
+        />
       )}
 
       {/* Rules modal */}
@@ -870,7 +920,7 @@ export default function HistoryStatsAndFactsGameBoard() {
         />
       )}
 
-      {/* SOLO Winner modal */}
+      {/* SOLO Winner modal — z-index cao hơn + overlay mờ nhẹ để còn đọc lớp dưới */}
       {mode === "solo" && showSoloWin && (
         <SoloWinModal
           onPlayAgain={() => {
@@ -973,18 +1023,25 @@ function Toolbar({
   );
 }
 
+/** Kết quả lật thẻ — thêm prop `locked` để ẩn nút và chặn click ngoài khi đã thắng solo */
 function ResultModal({
   modal,
   onConfirm,
+  locked = false,
 }: {
   modal: { type: "correct"; card: Required<MaterialCard> } | { type: "wrong"; card: Required<MaterialCard> };
   onConfirm: () => void;
+  locked?: boolean;
 }) {
   const correct = modal.type === "correct";
   return (
     <div
-      className="fixed inset-0 z-[70] bg-black/65 flex items-center justify-center p-4"
-      onClick={onConfirm}
+      className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        // Khi locked (đã có Winner), không cho click để “kết thúc lượt”
+        if (locked) return;
+        onConfirm();
+      }}
     >
       <div
         className="bg-card border border-border rounded-xl w-full max-w-lg p-6 pointer-events-auto"
@@ -1004,14 +1061,18 @@ function ResultModal({
               </div>
               <div className="mt-1 text-muted-foreground">Fact: {modal.card.fact}</div>
             </div>
-            <div className="mt-4 text-right">
-              <button
-                className="px-3 py-2 rounded bg-emerald-500 text-black hover:brightness-110"
-                onClick={onConfirm}
-              >
-                Tiếp tục (kết thúc lượt)
-              </button>
-            </div>
+
+            {/* Ẩn nút khi đã có Winner */}
+            {!locked && (
+              <div className="mt-4 text-right">
+                <button
+                  className="px-3 py-2 rounded bg-emerald-500 text-black hover:brightness-110"
+                  onClick={onConfirm}
+                >
+                  Tiếp tục (kết thúc lượt)
+                </button>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -1025,14 +1086,17 @@ function ResultModal({
                 Thẻ này sẽ bị <b>discard</b> và bạn phải <b>bốc thêm 1 lá</b>.
               </div>
             </div>
-            <div className="mt-4 text-right">
-              <button
-                className="px-3 py-2 rounded bg-rose-500 text-black hover:brightness-110"
-                onClick={onConfirm}
-              >
-                Tiếp tục (kết thúc lượt)
-              </button>
-            </div>
+
+            {!locked && (
+              <div className="mt-4 text-right">
+                <button
+                  className="px-3 py-2 rounded bg-rose-500 text-black hover:brightness-110"
+                  onClick={onConfirm}
+                >
+                  Tiếp tục (kết thúc lượt)
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -1132,6 +1196,7 @@ function StartModeModal({
   );
 }
 
+/** SOLO Winner modal — neo góc, không che nội dung bên dưới */
 function SoloWinModal({
   onPlayAgain,
   onBackToStart,
@@ -1140,31 +1205,43 @@ function SoloWinModal({
   onBackToStart: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[90] bg-black/65 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-md p-7 text-center">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <Trophy className="w-8 h-8 text-yellow-400" />
-          <h3 className="text-2xl font-extrabold">Chúc mừng!</h3>
-          <Trophy className="w-8 h-8 text-yellow-400" />
-        </div>
-        <p className="text-muted-foreground">
-          Bạn đã <b>đánh hết bài trên tay</b> và chiến thắng chế độ <b>1 người</b> 🎉
-        </p>
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <button
-            onClick={onPlayAgain}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            Chơi lại solo
-          </button>
-          <button
-            onClick={onBackToStart}
-            className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90"
-          >
-            Về Start
-          </button>
+    // Lớp container không chặn click ở ngoài (để nhìn/đọc được ResultModal bên dưới)
+    <div className="fixed inset-0 z-[120] pointer-events-none">
+      {/* Card winner neo góc phải-trên, chỉ card mới nhận tương tác */}
+      <div className="absolute top-4 right-4 w-[min(92vw,460px)] pointer-events-auto">
+        <div className="rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur supports-[backdrop-filter]:backdrop-blur-md p-6">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <svg className="w-7 h-7 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path d="M16 2l1.5 4.5H22l-3.75 2.8L19.7 14l-3.7-2.6L12.3 14l1.45-4.7L10 6.5h4.5L16 2z"/></svg>
+            <h3 className="text-xl md:text-2xl font-extrabold">Chúc mừng!</h3>
+            <svg className="w-7 h-7 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path d="M16 2l1.5 4.5H22l-3.75 2.8L19.7 14l-3.7-2.6L12.3 14l1.45-4.7L10 6.5h4.5L16 2z"/></svg>
+          </div>
+
+          <p className="text-sm md:text-base text-muted-foreground">
+            Bạn đã <b>đánh hết bài trên tay</b> và chiến thắng chế độ <b>1 người</b> 🎉
+          </p>
+
+          <div className="mt-5 flex items-center justify-center gap-3">
+            <button
+              onClick={onPlayAgain}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Chơi lại solo
+            </button>
+            <button
+              onClick={onBackToStart}
+              className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90"
+            >
+              Về Start
+            </button>
+          </div>
+
+          {/* Gợi ý nhỏ để người chơi biết vẫn đọc được bảng bên dưới */}
+          <p className="mt-3 text-xs text-muted-foreground text-center">
+            (Bạn vẫn có thể đọc thông tin lượt vừa lật ở khung phía dưới)
+          </p>
         </div>
       </div>
     </div>
   );
 }
+
