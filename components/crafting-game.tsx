@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { HelpCircle, ZoomIn, ZoomOut, Ruler, Play } from "lucide-react";
+import { HelpCircle, ZoomIn, ZoomOut, Ruler, Play, Trophy, Users } from "lucide-react";
 
 /* ============ Types & helpers ============ */
 type MaterialCard = {
@@ -22,6 +22,15 @@ type SlotCell = {
   locked: boolean;   // anchor hoặc đã lật đúng
   owner?: number;    // đội đang giữ (khi chưa lật)
 };
+
+type Player = { id: number; name: string; hand: Required<MaterialCard>[] };
+
+type Phase = "idle" | "countdown" | "dealing" | "active";
+type FlipModal =
+  | { type: "correct"; card: Required<MaterialCard> }
+  | { type: "wrong"; card: Required<MaterialCard> };
+
+type GameMode = "team" | "solo";
 
 const HAND_CAPACITY = 4;
 
@@ -82,7 +91,6 @@ const RAW_DECK: MaterialCard[] = [
 
   // Phần II — Công nghiệp
   { id:"steam-newcomen", system:"Hơi nước", faceA:"Động cơ Newcomen", faceB:"1712", stats:["Mỏ than","Bơm nước"], fact:"Thực dụng", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1712") },
-  { id:"steam-watt", system:"Hơi nước", faceA:"Bằng sáng chế Watt", faceB:"1769", stats:["Hiệu quả","Đô thị hóa"], fact:"Ngưng tụ riêng", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1769") },
   { id:"cotton-gin", system:"Bông", faceA:"Máy tách hạt Bông", faceB:"1783", stats:["Mass","Nô lệ"], fact:"Bỏ nút thắt", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1783") },
   { id:"rubber-vulcanization", system:"Cao su", faceA:"Lưu hóa (Goodyear)", faceB:"1844", stats:["Vật liệu","Lốp"], fact:"Ổn định cao su", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1844") },
   { id:"steel-bessemer", system:"Thép", faceA:"Quy trình Bessemer", faceB:"1855", stats:["Mass","Rẻ"], fact:"Đường sắt/nhà cao", section:"Công nghiệp", yearStart: parseVNPeriodToYearStart("1855") },
@@ -436,15 +444,9 @@ const SlotTimelineBoard = React.forwardRef(function SlotTimelineBoard(
 });
 
 /* ============ Game component ============ */
-type Player = { id: number; name: string; hand: Required<MaterialCard>[] };
 const TEAM_COLORS = ["#f97316", "#22c55e", "#06b6d4", "#eab308"] as const;
-type Phase = "idle" | "countdown" | "dealing" | "active";
-type FlipModal =
-  | { type: "correct"; card: Required<MaterialCard> }
-  | { type: "wrong"; card: Required<MaterialCard> };
 
 export default function HistoryStatsAndFactsGameBoard() {
-  const PLAYERS = 4;
   const FULL_DECK = React.useMemo(
     () => RAW_DECK.filter((c) => c.yearStart !== null) as Required<MaterialCard>[],
     []
@@ -474,15 +476,35 @@ export default function HistoryStatsAndFactsGameBoard() {
 
   const [flipModal, setFlipModal] = React.useState<FlipModal | null>(null);
 
-  /* ---------- Start / Reset game ---------- */
-  const setupGame = React.useCallback(() => {
+  // NEW: Start mode selector + mode state + winner modal (solo)
+  const [showStartModal, setShowStartModal] = React.useState(false);
+  const [mode, setMode] = React.useState<GameMode | null>(null);
+  const [showSoloWin, setShowSoloWin] = React.useState(false);
+
+  // ---------- Start / Reset game ----------
+  const resetToIdle = React.useCallback(() => {
+    setPhase("idle");
+    setCountdown(3);
+    setSlots(Array(NUM_SLOTS).fill(null));
+    setAnchor(null);
+    setPlayers([]);
+    setDrawPile([]);
+    setDiscardPile([]);
+    setCurrent(0);
+    setFinishedOrder([]);
+    setHoverSlot(null);
+    setFlipModal(null);
+    setShowSoloWin(false);
+  }, []);
+
+  const setupGameWithCount = React.useCallback((playerNum: number) => {
     const deck = shuffle(FULL_DECK);
     if (!deck.length) return;
     const anch = deck.shift()!;
-    const dealEach = Math.min(HAND_CAPACITY, Math.floor(deck.length / PLAYERS));
-    const _players: Player[] = Array.from({ length: PLAYERS }, (_, i) => ({
+    const dealEach = Math.min(HAND_CAPACITY, Math.floor(deck.length / playerNum));
+    const _players: Player[] = Array.from({ length: playerNum }, (_, i) => ({
       id: i,
-      name: `Đội ${i + 1}`,
+      name: playerNum === 1 ? "Bạn" : `Đội ${i + 1}`,
       hand: [],
     }));
 
@@ -502,7 +524,7 @@ export default function HistoryStatsAndFactsGameBoard() {
     (async () => {
       setPhase("dealing");
       for (let r = 0; r < dealEach; r++) {
-        for (let p = 0; p < PLAYERS; p++) {
+        for (let p = 0; p < playerNum; p++) {
           const top = deck.shift();
           if (!top) break;
           setPlayers((prev) =>
@@ -516,10 +538,14 @@ export default function HistoryStatsAndFactsGameBoard() {
       }
       setPhase("active");
     })();
-  }, [FULL_DECK]);
+  }, [FULL_DECK, MID]);
 
-  const startGame = () => {
+  const startGame = (chosen: GameMode) => {
     if (phase !== "idle") return;
+    setMode(chosen);
+    setShowStartModal(false);
+
+    const playerNum = chosen === "solo" ? 1 : 4;
     setCountdown(3);
     setPhase("countdown");
     let t = 3;
@@ -528,15 +554,16 @@ export default function HistoryStatsAndFactsGameBoard() {
       setCountdown(t);
       if (t <= 0) {
         clearInterval(id);
-        setupGame();
+        setupGameWithCount(playerNum);
       }
     }, 650);
   };
 
-  /* ---------- Lượt chơi ---------- */
+  // ---------- Lượt chơi ----------
   const nextPlayer = () => {
-    for (let step = 1; step <= PLAYERS; step++) {
-      const i = (current + step) % PLAYERS;
+    const n = players.length || 1;
+    for (let step = 1; step <= n; step++) {
+      const i = (current + step) % n;
       if (players[i]?.hand.length > 0) {
         setCurrent(i);
         break;
@@ -593,6 +620,8 @@ export default function HistoryStatsAndFactsGameBoard() {
       withThis[slotIndex] = { ...s, revealed: true, locked: true, owner: undefined };
       setSlots(withThis);
       setFlipModal({ type: "correct", card: s.card });
+
+      // Nếu đội hiện tại hết bài -> ghi nhận thứ hạng
       if (players[current].hand.length === 0 && !finishedOrder.includes(current)) {
         setFinishedOrder((o) => [...o, current]);
       }
@@ -621,7 +650,14 @@ export default function HistoryStatsAndFactsGameBoard() {
     nextPlayer();
   }
 
-  /* ---------- Seats UI: 3 xấp bên trái + đội đang lượt chiếm gần hết hàng ---------- */
+  // SOLO: hiện modal chúc mừng khi người chơi hết bài
+  React.useEffect(() => {
+    if (mode === "solo" && finishedOrder.includes(0)) {
+      setShowSoloWin(true);
+    }
+  }, [mode, finishedOrder]);
+
+  /* ---------- Seats UI ---------- */
   const CompactSeat = ({ idx }: { idx: number }) => {
     const p = players[idx];
     const cards = p?.hand ?? [];
@@ -632,7 +668,7 @@ export default function HistoryStatsAndFactsGameBoard() {
           <span className="inline-flex items-center gap-1">
             <span
               className="inline-block w-2.5 h-2.5 rounded-full"
-              style={{ background: TEAM_COLORS[idx] }}
+              style={{ background: TEAM_COLORS[idx] ?? "#22c55e" }}
             />
             <span className="font-semibold">{p?.name ?? "-"}</span>
           </span>
@@ -664,7 +700,6 @@ export default function HistoryStatsAndFactsGameBoard() {
     );
   };
 
-  // Đội đang lượt: chiếm gần hết hàng 1, thẻ portrait cao to
   const ExpandedSeat = ({ idx }: { idx: number }) => {
     const p = players[idx];
     const cards = p?.hand ?? [];
@@ -675,7 +710,7 @@ export default function HistoryStatsAndFactsGameBoard() {
           <span className="inline-flex items-center gap-1">
             <span
               className="inline-block w-2.5 h-2.5 rounded-full"
-              style={{ background: TEAM_COLORS[idx] }}
+              style={{ background: TEAM_COLORS[idx] ?? "#22c55e" }}
             />
             <span className="font-semibold">{p?.name ?? "-"}</span>
           </span>
@@ -684,7 +719,6 @@ export default function HistoryStatsAndFactsGameBoard() {
           </span>
         </div>
 
-        {/* Cao hơn để chiếm hết khoảng trống hàng 1 */}
         <div className="flex items-end gap-3 overflow-x-auto h-[280px] pb-2">
           {cards.map((c) => (
             <Card
@@ -727,8 +761,10 @@ export default function HistoryStatsAndFactsGameBoard() {
     );
   };
 
-  // Thứ tự 3 đội ở cột trái: theo chiều kim đồng hồ sau đội hiện tại
-  const others = [(current + 1) % 4, (current + 2) % 4, (current + 3) % 4];
+  const otherIdxs =
+    players.length > 1
+      ? Array.from({ length: players.length - 1 }, (_, k) => (current + 1 + k) % players.length)
+      : [];
 
   /* ---------- Render ---------- */
   return (
@@ -749,50 +785,55 @@ export default function HistoryStatsAndFactsGameBoard() {
               History Stats & Facts — Timeline Battle
             </h2>
             <p className="text-sm text-amber-200/80 mt-1 text-center md:text-left">
-              Hàng trên: đội tới lượt <b>chiếm gần hết</b> để hiện 5 lá{" "}
-              <b>portrait cao</b>; 3 đội còn lại <b>xấp bài</b> gọn bên trái.
-              Timeline bên dưới hiển thị thẻ <b>dài</b>, chữ lớn.
+              {mode === "solo"
+                ? "Chế độ 1 người — kéo & lật thẻ đúng thứ tự thời gian; hết bài là thắng."
+                : "Hàng trên: đội tới lượt chiếm gần hết để hiện 5 lá portrait; 3 đội còn lại xấp bài gọn bên trái. Timeline bên dưới hiển thị thẻ dài, chữ lớn."}
             </p>
           </div>
 
           <Toolbar
             phase={phase}
+            mode={mode}
             zoom={zoom}
             setZoom={setZoom}
-            onStart={startGame}
+            onOpenStart={() => {
+              if (phase !== "idle") return;
+              setShowStartModal(true);
+            }}
             onShowRules={() => setShowRules(true)}
           />
         </div>
       </div>
 
-      {/* HÀNG TRÊN: cột trái (3 xấp) + đội hiện tại (rộng) */}
+      {/* HÀNG TRÊN: cột trái (các đội khác) + đội hiện tại */}
       <div className="container mx-auto px-4 mt-4">
         <div className="flex gap-4 items-stretch">
-          <div className="w-[260px] shrink-0 flex flex-col gap-3">
-            <CompactSeat idx={others[0]} />
-            <CompactSeat idx={others[1]} />
-            <CompactSeat idx={others[2]} />
-          </div>
+          {otherIdxs.length > 0 && (
+            <div className="w-[260px] shrink-0 flex flex-col gap-3">
+              {otherIdxs.map((idx) => (
+                <CompactSeat key={idx} idx={idx} />
+              ))}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <ExpandedSeat idx={current} />
           </div>
         </div>
       </div>
 
-      {/* TIMELINE chiếm toàn bộ phía dưới */}
+      {/* TIMELINE */}
       <div className="container mx-auto px-4 mt-4">
         <div className="rounded-2xl border border-amber-700/40 bg-gradient-to-b from-slate-900/60 to-slate-950/80 p-4 shadow-sm">
           <div className="text-xs text-amber-200/80 mb-2 text-center">
             {phase === "idle" &&
-              "Nhấn Start game để đếm ngược, auto locate tới Anchor và chia bài."}
+              "Nhấn Start để chọn chế độ, đếm ngược, auto locate tới Anchor và chia bài."}
             {phase === "countdown" && `Bắt đầu sau: ${countdown}…`}
             {phase === "dealing" && "Đang chia bài…"}
             {phase === "active" && (
               <>
                 Nọc: {drawPile.length} • Bỏ: {discardPile.length} —{" "}
                 <span className="opacity-90">
-                  Kéo 1 lá vào <b>slot</b>. Bấm thẻ để <b>lật</b> và hiện popup
-                  kết quả.
+                  Kéo 1 lá vào <b>slot</b>. Bấm thẻ để <b>lật</b> và hiện popup kết quả.
                 </span>
               </>
             )}
@@ -819,7 +860,31 @@ export default function HistoryStatsAndFactsGameBoard() {
       )}
 
       {/* Rules modal */}
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+      {showRules && <RulesModal mode={mode} onClose={() => setShowRules(false)} />}
+
+      {/* Start mode modal */}
+      {showStartModal && (
+        <StartModeModal
+          onClose={() => setShowStartModal(false)}
+          onPick={(m) => startGame(m)}
+        />
+      )}
+
+      {/* SOLO Winner modal */}
+      {mode === "solo" && showSoloWin && (
+        <SoloWinModal
+          onPlayAgain={() => {
+            setShowSoloWin(false);
+            resetToIdle();
+            setShowStartModal(false);
+            startGame("solo");
+          }}
+          onBackToStart={() => {
+            setShowSoloWin(false);
+            resetToIdle();
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -827,19 +892,32 @@ export default function HistoryStatsAndFactsGameBoard() {
 /* ---------- Small components ---------- */
 function Toolbar({
   phase,
+  mode,
   zoom,
   setZoom,
-  onStart,
+  onOpenStart,
   onShowRules,
 }: {
-  phase: "idle" | "countdown" | "dealing" | "active";
+  phase: Phase;
+  mode: GameMode | null;
   zoom: number;
   setZoom: (z: number) => void;
-  onStart: () => void;
+  onOpenStart: () => void;
   onShowRules: () => void;
 }) {
   return (
     <div className="flex items-center justify-center md:justify-end gap-2">
+      <span className="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-700/40 bg-slate-900/40 text-xs text-amber-200/80">
+        {mode ? (
+          <>
+            {mode === "solo" ? <Trophy className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+            Chế độ: <b>{mode === "solo" ? "1 người" : "Chia đội"}</b>
+          </>
+        ) : (
+          "Chưa chọn chế độ"
+        )}
+      </span>
+
       <button
         disabled={phase !== "idle"}
         className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${
@@ -847,10 +925,10 @@ function Toolbar({
             ? "border-amber-700/40 bg-amber-400 text-black hover:brightness-110"
             : "border-slate-700/40 bg-slate-800/50 text-slate-400 cursor-not-allowed"
         }`}
-        onClick={onStart}
+        onClick={onOpenStart}
         title="Bắt đầu ván mới"
       >
-        <Play className="w-4 h-4" /> Start game
+        <Play className="w-4 h-4" /> Start
       </button>
 
       <button
@@ -962,7 +1040,7 @@ function ResultModal({
   );
 }
 
-function RulesModal({ onClose }: { onClose: () => void }) {
+function RulesModal({ onClose, mode }: { onClose: () => void; mode: GameMode | null }) {
   return (
     <div
       className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4"
@@ -972,27 +1050,118 @@ function RulesModal({ onClose }: { onClose: () => void }) {
         className="bg-card border border-border rounded-xl w-full max-w-lg p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-xl font-bold mb-2">Luật — Competitive mode</h3>
+        <h3 className="text-xl font-bold mb-2">
+          Luật — {mode === "solo" ? "Chế độ 1 người" : "Chia đội (Competitive)"}
+        </h3>
         <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+          <li>Nhấn <b>Start</b> để chọn chế độ, đếm ngược, tự cuộn tới <b>Anchor</b> và chia bài.</li>
+          <li>Kéo 1 lá vào <b>slot</b> (các thẻ bên cạnh sẽ <b>nhường chỗ</b>).</li>
+          <li>Thẻ đặt thử có thể <b>di chuyển</b> cho đến khi bấm để <b>lật</b>.</li>
+          <li>Lật đúng: thẻ giữ nguyên, hiện năm. Lật sai: bỏ + bốc 1 lá. Nhấn “Tiếp tục” để kết thúc lượt.</li>
           <li>
-            Nhấn <b>Start game</b> để đếm ngược, màn hình tự cuộn tới <b>Anchor</b> và chia bài cho 4 đội.
-          </li>
-          <li>
-            Đến lượt, kéo 1 lá vào <b>slot</b> (các thẻ bên cạnh sẽ <b>nhường chỗ</b>).
-          </li>
-          <li>
-            Thẻ đặt thử có thể <b>di chuyển tự do</b> cho đến khi bấm để <b>lật</b>.
-          </li>
-          <li>
-            Lật đúng: thẻ giữ nguyên, hiện năm. Lật sai: discard + bốc 1 lá. Nhấn “Tiếp tục” để chuyển lượt.
-          </li>
-          <li>
-            Ai <b>hết bài trước</b> là người thắng; thứ hạng hiển thị ở khung đội.
+            {mode === "solo"
+              ? <>Mục tiêu: <b>hết bài trên tay</b> — khi hoàn thành sẽ hiện cửa sổ chúc mừng.</>
+              : <>Ai <b>hết bài trước</b> sẽ về đích; thứ hạng hiển thị theo lượt hoàn tất.</>}
           </li>
         </ul>
         <div className="text-right mt-4">
           <button className="px-3 py-2 rounded bg-muted hover:bg-muted/80" onClick={onClose}>
             Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StartModeModal({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void;
+  onPick: (m: GameMode) => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[80] bg-black/60 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card border border-border rounded-2xl w-full max-w-xl p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-xl font-bold mb-1">Chọn chế độ</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Bắt đầu ván mới với <b>Chia đội (4 đội)</b> hoặc <b>Chơi 1 người</b>.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <button
+            onClick={() => onPick("team")}
+            className="p-4 rounded-xl border border-amber-700/40 bg-amber-400/15 hover:bg-amber-400/25 text-left transition"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-semibold">Chia đội</div>
+              <Users className="w-5 h-5 text-amber-300" />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              4 đội luân phiên; ai hết bài trước về đích.
+            </div>
+          </button>
+
+          <button
+            onClick={() => onPick("solo")}
+            className="p-4 rounded-xl border border-emerald-700/40 bg-emerald-400/10 hover:bg-emerald-400/20 text-left transition"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-semibold">Chơi 1 người</div>
+              <Trophy className="w-5 h-5 text-emerald-300" />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Luật giữ nguyên; hết bài là thắng, có popup chúc mừng.
+            </div>
+          </button>
+        </div>
+
+        <div className="mt-5 text-right">
+          <button className="px-3 py-2 rounded bg-muted hover:bg-muted/80" onClick={onClose}>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SoloWinModal({
+  onPlayAgain,
+  onBackToStart,
+}: {
+  onPlayAgain: () => void;
+  onBackToStart: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[90] bg-black/65 flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-md p-7 text-center">
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <Trophy className="w-8 h-8 text-yellow-400" />
+          <h3 className="text-2xl font-extrabold">Chúc mừng!</h3>
+          <Trophy className="w-8 h-8 text-yellow-400" />
+        </div>
+        <p className="text-muted-foreground">
+          Bạn đã <b>đánh hết bài trên tay</b> và chiến thắng chế độ <b>1 người</b> 🎉
+        </p>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <button
+            onClick={onPlayAgain}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Chơi lại solo
+          </button>
+          <button
+            onClick={onBackToStart}
+            className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90"
+          >
+            Về Start
           </button>
         </div>
       </div>
